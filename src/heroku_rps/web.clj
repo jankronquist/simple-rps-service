@@ -3,30 +3,32 @@
             [compojure.handler :refer [site]]
             [compojure.route :as route]
             [clojure.java.io :as io]
+            [cemerick.friend :as friend]
+            [cemerick.friend.openid :as openid]
             [ring.middleware.stacktrace :as trace]
             [ring.middleware.session :as session]
             [ring.middleware.session.cookie :as cookie]
             [ring.adapter.jetty :as jetty]
-            [ring.middleware.basic-authentication :as basic]
-            [cemerick.drawbridge :as drawbridge]
-            [environ.core :refer [env]]))
-
-(defn- authenticated? [user pass]
-  ;; TODO: heroku config:add REPL_USER=[...] REPL_PASSWORD=[...]
-  (= [user pass] [(env :repl-user false) (env :repl-password false)]))
-
-(def ^:private drawbridge
-  (-> (drawbridge/ring-handler)
-      (session/wrap-session)
-      (basic/wrap-basic-authentication authenticated?)))
+            [environ.core :refer [env]]
+            [ring.util.response :as resp]
+            [hiccup.core :refer [html]]))
 
 (defroutes app
-  (ANY "/repl" {:as req}
-       (drawbridge req))
-  (GET "/" []
-       {:status 200
-        :headers {"Content-Type" "text/plain"}
-        :body (pr-str ["Hello" :from 'Heroku])})
+  (GET "/" req
+       (html 
+         [:body
+          (if-let [auth (friend/current-authentication req)]
+            [:p "Logged in! Some information delivered by your OpenID provider:"
+             [:ul (for [[k v] auth
+                        :let [[k v] (if (= :identity k)
+                                      ["Your OpenID identity" (str (subs v 0 (* (count v) 2/3)) "…")]
+                                      [k v])]]
+                    [:li [:strong (str (name k) ": ")] v])]]
+            [:form {:action "/login" :method "POST"}
+             [:input {:name "identifier" :type "hidden" :value "https://www.google.com/accounts/o8/id"}]
+             [:input {:type "submit" :value "Login"}]])]))
+  (GET "/logout" req
+       (friend/logout* (resp/redirect (str (:context req) "/"))))
   (ANY "*" []
        (route/not-found (slurp (io/resource "404.html")))))
 
@@ -46,6 +48,12 @@
                          ((if (env :production)
                             wrap-error-page
                             trace/wrap-stacktrace))
+                         (friend/authenticate
+                           {:allow-anon? true
+                            :default-landing-uri "/"
+                            :workflows [(openid/workflow
+                                          :openid-uri "/login"
+                                          :credential-fn identity)]})
                          (site {:session {:store store}}))
                      {:port port :join? false})))
 
