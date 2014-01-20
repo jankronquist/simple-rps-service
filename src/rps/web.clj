@@ -34,8 +34,9 @@
 (defn render-header [player]
   [:div
    (if player
-     ; todo logout
-     [:p "Current user: " player]
+      [:form {:action "/logout" :method "GET"}
+       [:p "Current user: " player
+        [:input {:type "submit" :value "Logout"}]]]
      [:form {:action "/login" :method "POST"}
       [:input {:name "identifier" :type "hidden" :value "https://www.google.com/accounts/o8/id"}]
       [:input {:type "submit" :value "Login using Google"}]])
@@ -89,7 +90,7 @@
           (let [game-id (f/new-id)
                 creator (get-player-id r)
                 player-input (ensure-vector (get-in r [:form-params "player"]))
-                players (case (count player-input)
+                players (case (count (filter #(not (.isEmpty (.trim %))) player-input))
                                      1 (conj player-input creator)
                                      2 player-input
                                      (throw (Exception. "Incorrect number of players")))]
