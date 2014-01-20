@@ -32,16 +32,16 @@
     (assoc state
            :other-player player
            :other-move move
-           :moves (assoc moves
-                         player move))))
+           :moves (conj moves
+                        {:player player
+                         :move move}))))
 
 (defmethod c/apply-event "GameEndedEvent" [state event]
   (assoc state
     :state "completed"
     :result (get-in event [:body :result])
     :winner (get-in event [:body :winner])
-    :loser (get-in event [:body :loser])
-    :scores (get-in event [:body :scores])))
+    :loser (get-in event [:body :loser])))
 
 ; game aggregate command handler
 
@@ -58,7 +58,7 @@
       (throw (Exception. "Incorrect state")))
     (when-not (some #{player} players)
       (throw (Exception. "Player not playing this game")))
-    (when (contains? moves player)
+    (when (= other-player player)
       (throw (Exception. "Player has already made a move")))
     (let [events [(m/move-made-event aggregate-id player move)]]
       (if-not other-move

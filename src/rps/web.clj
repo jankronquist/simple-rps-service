@@ -19,8 +19,8 @@
 (defn new-uuid [] (.toString (java.util.UUID/randomUUID)))
 
 (defn render-move-form 
-  ([game-id player]
-    (let [uri (str "/games/" game-id "?login=" player)]
+  ([game-id]
+    (let [uri (str "/games/" game-id)]
       [:form {:action uri :method "post"} 
                 [:select {:name "move"}
                  [:option {:value "rock"} "Rock"]
@@ -29,19 +29,30 @@
                 [:input {:type "submit" :value "Make move"}]])))
 
 (defn render-moves [moves]
-  [:ul (map (fn [[player move]] [:li (str (name player) " moved " move)]) moves)])
+  [:ul (map (fn [{:keys [player move]}] [:li (str (name player) " moved " move)]) moves)])
+
+(defn render-header [player]
+  [:div
+   (if player
+     ; todo logout
+     [:p "Current user: " player]
+     [:form {:action "/login" :method "POST"}
+      [:input {:name "identifier" :type "hidden" :value "https://www.google.com/accounts/o8/id"}]
+      [:input {:type "submit" :value "Login using Google"}]])
+   [:hr]])
 
 (defn render-game [game-id player]
   (let [game (f/load-aggregate game-id)
         playing? (some #{player} (:players game))
-        moved? (contains? (:moves game) (keyword player))]
+        moved? (some #(= player (:player %)) (:moves game))]
     ; TODO check if game is nil
     (println game)
     (html [:body
+           (render-header player)
            [:p (str "Created by " (:creator game))]
            (condp = (:state game)
              "started" (if (and playing? (not moved?))
-                         (render-move-form game-id player)
+                         (render-move-form game-id)
                          [:p "Waiting..."])
              "completed" [:div
                           (if (= "won" (:result game))
@@ -52,29 +63,44 @@
 
 (defn get-player-id 
   [request]
-  (let [auth (friend/current-authentication request)]
-    (:email auth)))
+  (if-let [auth (friend/current-authentication request)]
+    (:email auth)
+    nil))
+
+(defn ensure-vector [arg]
+  (if-not arg
+    []
+    (if (vector? arg)
+      arg
+      [arg])))
 
 (defroutes app
   (GET "/" req
-       (html 
-         [:body
-          (if-let [auth (friend/current-authentication req)]
-            [:p "Logged in: " (:identity auth)]
-            [:form {:action "/login" :method "POST"}
-             [:input {:name "identifier" :type "hidden" :value "https://www.google.com/accounts/o8/id"}]
-             [:input {:type "submit" :value "Login"}]])]))
+       (let [player (get-player-id req)]
+         (html 
+           [:body
+            (render-header player)
+            (if player
+              [:form {:action "/" :method "POST"} 
+               [:label {:for "player"} "Opponent:" [:input {:type "text" :name "player"}]]
+               [:input {:type "submit" :value "Create game"}]])])))
   (POST "/" r 
-        (let [game-id (f/new-id)
-              players (get-in r [:form-params "player"])]
-          ; TODO: players should be a vector of 2 elements
-          (f/handle-command (m/->CreateGameCommand game-id (get-player-id r) players))
-          (ring.util.response/redirect-after-post (str "/games/" game-id))))
+        (friend/authenticated
+          (let [game-id (f/new-id)
+                creator (get-player-id r)
+                player-input (ensure-vector (get-in r [:form-params "player"]))
+                players (case (count player-input)
+                                     1 (conj player-input creator)
+                                     2 player-input
+                                     (throw (Exception. "Incorrect number of players")))]
+            (f/handle-command (m/->CreateGameCommand game-id creator players))
+            (ring.util.response/redirect-after-post (str "/games/" game-id)))))
   (GET "/games/:game-id" [game-id :as request]
        (render-game game-id (get-player-id request)))
   (POST "/games/:game-id" [game-id move :as r]
-        (f/handle-command (m/->MakeMoveCommand game-id (get-player-id r) move))
-        (ring.util.response/redirect-after-post (str "/games/" game-id)))
+        (friend/authenticated
+          (f/handle-command (m/->MakeMoveCommand game-id (get-player-id r) move))
+          (ring.util.response/redirect-after-post (str "/games/" game-id))))
   (GET "/logout" req
        (friend/logout* (resp/redirect (str (:context req) "/"))))
   (ANY "*" []
@@ -88,16 +114,6 @@
             :headers {"Content-Type" "text/html"}
             :body (slurp (io/resource "500.html"))}))))
 
-(def query-param-authentication
-  (fn [request]
-    (if-let [user (get-in request [:query-params "login"])]
-      (do
-        (workflows/make-auth {:username user
-                              :email user} 
-                             {::friend/workflow :http-query-param
-                              ::friend/redirect-on-auth? false}))
-      nil)))
-
 (defn -main [& [port]]
   (let [port (Integer. (or port (env :port) 5000))
         ;; TODO: heroku config:add SESSION_SECRET=$RANDOM_16_CHARS
@@ -109,8 +125,7 @@
                          (friend/authenticate
                                 {:allow-anon? true
 	                                :default-landing-uri "/"
-	                                :workflows [query-param-authentication
-                                             (openid/workflow
+	                                :workflows [(openid/workflow
 	                                              :openid-uri "/login"
 	                                              :credential-fn identity)]})
                          (site {:session {:store store}}))
