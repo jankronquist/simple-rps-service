@@ -20,11 +20,23 @@
      :gameType "rock-paper-scissors"
      :gameUrl (str "http://heroku-rps.herokuapp.com/games/" game-id)}))
 
-(defn game-ended-event [game-id scores]
+(defn game-won-event 
+  [game-id scores winner loser]
   (make-message 
     game-id 
     "GameEndedEvent"
-    {:result true
+    {:result "won"
+     :scores scores
+     :winner winner
+     :loser loser
+     :gameType "rock-paper-scissors"}))
+
+(defn game-tied-event 
+  [game-id scores]
+  (make-message 
+    game-id 
+    "GameEndedEvent"
+    {:result "tied"
      :scores scores
      :gameType "rock-paper-scissors"}))
 
@@ -53,5 +65,5 @@
 
 ; commands
 
-(defrecord CreateGameCommand [game-id creator players])
-(defrecord MakeMoveCommand [game-id player move])
+(defrecord CreateGameCommand [aggregate-id creator players])
+(defrecord MakeMoveCommand [aggregate-id player move])

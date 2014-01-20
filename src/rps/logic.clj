@@ -1,5 +1,5 @@
 (ns rps.logic
-  (:require [rps.framework :as f]
+  (:require [rps.core :as c]
             [rps.messages :as m]))
 
 ; move rules
@@ -17,28 +17,35 @@
 
 ; game aggregate - event handlers
 
-(defmethod f/apply-event "GameCreatedEvent" [state event]
+(defmethod c/apply-event "GameCreatedEvent" [state event]
   (let [creator (get-in event [:body :createdBy])
         players (get-in event [:body :players])]
     (assoc state
-      :state :started
+      :state "started"
       :creator creator
       :players players)))
 
-(defmethod f/apply-event "MoveMadeEvent" [state event]
+(defmethod c/apply-event "MoveMadeEvent" [state event]
   (let [player (get-in event [:body :player])
-        move (get-in event [:body :move])]
+        move (get-in event [:body :move])
+        moves (:moves state)]
     (assoc state
-      :other-player player
-      :other-move move)))
+           :other-player player
+           :other-move move
+           :moves (assoc moves
+                         player move))))
 
-(defmethod f/apply-event "GameEndedEvent" [state event]
+(defmethod c/apply-event "GameEndedEvent" [state event]
   (assoc state
-    :state :completed))
+    :state "completed"
+    :result (get-in event [:body :result])
+    :winner (get-in event [:body :winner])
+    :loser (get-in event [:body :loser])
+    :scores (get-in event [:body :scores])))
 
 ; game aggregate command handler
 
-(extend-protocol f/CommandHandler
+(extend-protocol c/CommandHandler
   rps.messages.CreateGameCommand
   (perform [{:keys [aggregate-id creator players]} state]
     (when (:state state)
@@ -46,18 +53,18 @@
     [(m/game-created-event aggregate-id creator players)])
 
   rps.messages.MakeMoveCommand
-  (perform [{:keys [aggregate-id player move]} {:keys [state players other-player other-move]}]
-    (when-not (= state :started)
+  (perform [{:keys [aggregate-id player move]} {:keys [state players other-player other-move moves]}]
+    (when-not (= state "started")
       (throw (Exception. "Incorrect state")))
-    (when-not (contains? players player)
+    (when-not (some #{player} players)
       (throw (Exception. "Player not playing this game")))
-    (when-not (= other-player player)
+    (when (contains? moves player)
       (throw (Exception. "Player has already made a move")))
     (let [events [(m/move-made-event aggregate-id player move)]]
       (if-not other-move
         events
         (conj events 
               (case (compare-moves other-move move)
-                :victory (m/game-ended-event aggregate-id {other-player 1 player 0})
-                :loss (m/game-ended-event aggregate-id {player 1 other-player 0})
-                :tie (m/game-ended-event aggregate-id {player 0 other-player 0})))))))
+                :victory (m/game-won-event aggregate-id {other-player 1 player 0} other-player player)
+                :loss (m/game-won-event aggregate-id {player 1 other-player 0} player other-player)
+                :tie (m/game-tied-event aggregate-id {player 0 other-player 0})))))))
