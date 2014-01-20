@@ -2,13 +2,10 @@
   (:require [monger.core :as mongo]
             [monger.collection :as mc]
             [rps.core :as c]
-            [rps.logic :as logic]
-            [environ.core :refer [env]])
+            [rps.logic :as logic])
   (:import [org.bson.types ObjectId]))
 
-(mongo/connect-via-uri! (env :mongodb-url))
-
-(println (env :mongodb-url))
+(mongo/connect-via-uri! (System/getenv "MONGODB_URL"))
 
 (defn new-id [] (.toString (ObjectId.)))
 
