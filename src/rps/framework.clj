@@ -5,15 +5,24 @@
             [rps.logic :as logic])
   (:import [org.bson.types ObjectId]))
 
-(mongo/connect-via-uri! (System/getenv "MONGODB_URL"))
+(def connected (java.util.concurrent.atomic.AtomicBoolean.))
+
+(defn connect-if-necessary []
+  (if-not (.get connected)
+    (do
+      (.set connected true)
+      (mongo/connect-via-uri! (System/getenv "MONGODB_URL")))))
 
 (defn new-id [] (.toString (ObjectId.)))
 
 (defn load-aggregate [id]
   (let [oid (ObjectId. id)]
+    (connect-if-necessary)
     (mc/find-map-by-id "aggregates" oid)))
 
 (defn handle-command [command]
+  (connect-if-necessary)
+  
   (let [oid (ObjectId. (:aggregate-id command))
         current-state (mc/find-map-by-id "aggregates" oid)
         new-events (c/perform command current-state)
