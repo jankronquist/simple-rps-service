@@ -2,6 +2,8 @@
   (:require [monger.core :as mongo]
             [environ.core :refer [env]]))
 
+(def entryPoint "http://simple-rps-service.herokuapp.com")
+
 ; events
 
 (defn make-message [stream-id type body]
@@ -18,7 +20,7 @@
     {:createdBy created-by
      :players players
      :gameType "rock-paper-scissors"
-     :gameUrl (str "http://heroku-rps.herokuapp.com/games/" game-id)}))
+     :gameUrl (str entryPoint "/games/" game-id)}))
 
 (defn game-won-event 
   [game-id scores winner loser]
@@ -52,7 +54,7 @@
     "rock-paper-scissors" 
     "ServiceOnlineEvent"
     {:name "rock-paper-scissors"
-     :entryPoint "http://heroku-rps.herokuapp.com"
+     :entryPoint entryPoint
      :createdBy "Jan Kronquist"}))
 
 (defn log-event [level context message]

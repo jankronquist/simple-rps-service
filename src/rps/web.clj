@@ -13,7 +13,7 @@
             [environ.core :refer [env]]
             [ring.util.response :as resp]
             [hiccup.core :refer [html]]
-            [rps.framework :as f]
+            [rps.application :as app]
             [rps.messages :as m]))
 
 (defn new-uuid [] (.toString (java.util.UUID/randomUUID)))
@@ -43,11 +43,10 @@
    [:hr]])
 
 (defn render-game [game-id player]
-  (let [game (f/load-aggregate game-id)
+  (let [game (app/load-aggregate game-id)
         playing? (some #{player} (:players game))
         moved? (some #(= player (:player %)) (:moves game))]
     ; TODO check if game is nil
-    (println game)
     (html [:body
            (render-header player)
            [:p (str "Created by " (:creator game))]
@@ -87,20 +86,20 @@
                [:input {:type "submit" :value "Create game"}]])])))
   (POST "/" r 
         (friend/authenticated
-          (let [game-id (f/new-id)
+          (let [game-id (app/new-id)
                 creator (get-player-id r)
                 player-input (ensure-vector (get-in r [:form-params "player"]))
                 players (case (count (filter #(not (.isEmpty (.trim %))) player-input))
                                      1 (conj player-input creator)
                                      2 player-input
                                      (throw (Exception. "Incorrect number of players")))]
-            (f/handle-command (m/->CreateGameCommand game-id creator players))
+            (app/handle-command app/singleton (m/->CreateGameCommand game-id creator players))
             (ring.util.response/redirect-after-post (str "/games/" game-id)))))
   (GET "/games/:game-id" [game-id :as request]
        (render-game game-id (get-player-id request)))
   (POST "/games/:game-id" [game-id move :as r]
         (friend/authenticated
-          (f/handle-command (m/->MakeMoveCommand game-id (get-player-id r) move))
+          (app/handle-command app/singleton (m/->MakeMoveCommand game-id (get-player-id r) move))
           (ring.util.response/redirect-after-post (str "/games/" game-id))))
   (GET "/logout" req
        (friend/logout* (resp/redirect (str (:context req) "/"))))

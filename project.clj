@@ -12,7 +12,9 @@
                  [bultitude "0.1.7"]
                  [org.webjars/foundation "4.0.4"]
                  [hiccup "1.0.4"]
-                 [com.novemberain/monger "1.5.0"]]
+                 [com.novemberain/monger "1.5.0"]
+                 [com.novemberain/langohr "1.0.0-beta10"]
+                 [cheshire "5.3.1"]]
   :main rps.web
   :min-lein-version "2.0.0"
   :profiles {:production {:env {:production true}}})
