@@ -1,8 +1,6 @@
 # simple-rps-service
 
-The game Rock-Paper-Scissors implemented as a microservice that stores data in
-MongoDB and publishes events to RabbitMQ. The service has a simple restful
-HTTP API that allows creation of games and making moves.
+The game Rock-Paper-Scissors implemented as a microservice that stores data in MongoDB and publishes events to RabbitMQ. The service has a simple restful HTTP API that allows creation of games and making moves.
 
 Try it (here)[http://simple-rps-service.herokuapp.com/]!
 
