@@ -44,22 +44,29 @@
 
 (defn render-game [game-id player]
   (let [game (app/load-aggregate @app/singleton game-id)
-        playing? (some #{player} (:players game))
+        players (:players game)
+        playing? (some #{player} players)
         moved? (some #(= player (:player %)) (:moves game))]
-    ; TODO check if game is nil
-    (html [:body
-           (render-header player)
-           [:p (str "Created by " (:creator game))]
-           (condp = (:state game)
-             "started" (if (and playing? (not moved?))
-                         (render-move-form game-id)
-                         [:p "Waiting..."])
-             "completed" [:div
-                          (if (= "won" (:result game))
-                            [:p "Winner is: " (:winner game)]
-                            [:p "Tie!"])
-                          (render-moves (:moves game))]
-             "???")])))
+    (if-not game
+      (ring.util.response/not-found
+        (html [:body
+               (render-header player)
+               [:h2 "Not found"]]))
+      (html [:body
+             (render-header player)
+               [:div 
+                [:h2 (str "[" (first players) "] vs [" (second players) "]")]
+                [:p (str "Created by " (:creator game))]
+                (condp = (:state game)
+                  "started" (if (and playing? (not moved?))
+                              (render-move-form game-id)
+                              [:p "Waiting..."])
+                  "completed" [:div
+                               (if (= "won" (:result game))
+                                 [:p "Winner is: " (:winner game)]
+                                 [:p "Tie!"])
+                               (render-moves (:moves game))]
+                  "???")]]))))
 
 (defn get-player-id 
   [request]
@@ -116,7 +123,6 @@
 
 (defn -main [& [port]]
   (let [port (Integer. (or port (env :port) 5000))
-        ;; TODO: heroku config:add SESSION_SECRET=$RANDOM_16_CHARS
         store (cookie/cookie-store {:key (env :session-secret)})]
     (jetty/run-jetty (-> #'app
                          ((if (env :production)
@@ -130,7 +136,3 @@
 	                                              :credential-fn identity)]})
                          (site {:session {:store store}}))
                      {:port port :join? false})))
-
-;; For interactive development:
-;; (.stop server)
-;; (def server (-main))
