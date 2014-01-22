@@ -1,81 +1,61 @@
-# heroku-rps
+# simple-rps-service
 
-A [Heroku](http://www.heroku.com) web app using Compojure.
+The game Rock-Paper-Scissors implemented as a microservice that stores data in
+MongoDB and publishes events to RabbitMQ. The service has a simple restful
+HTTP API that allows creation of games and making moves.
 
-This generated project has a few basics set up beyond the bare Compojure defaults:
+Try it (here)[http://simple-rps-service.herokuapp.com/]!
 
-* Cookie-backed session store
-* Stack traces when in development
-* Environment-based config via [enviorn](https://github.com/weavejester/environ)
-* [HTTP-based REPL debugging](https://devcenter.heroku.com/articles/debugging-clojure) via [drawbridge](https://github.com/cemerick/drawbridge)
+Built using the following:
 
-## Usage
+* (Langohr)[http://clojurerabbitmq.info/] as RabbitMQ client
+* (Monger)[http://clojuremongodb.info/] as MongoDB client
+* (Cheshire)[https://github.com/dakrone/cheshire] for JSON marshalling
+* (Friend)[https://github.com/cemerick/friend] for OpenID authentication
+* The usual suspects: (Ring)[https://github.com/ring-clojure/ring], (Compojure)[https://github.com/weavejester/compojure], (Hiccup)[https://github.com/weavejester/hiccup]...
 
-To start a local web server for development you can either eval the
-commented out forms at the bottom of `web.clj` from your editor or
-launch from the command line:
+Deployed on (Heroku)[http://heroku.com] using (CloudAMQP)[http://www.cloudamqp.com/] and (MongoHQ)[http://www.mongohq.com/]. Initally based on (leiningen heroku template)[https://github.com/technomancy/lein-heroku] and (my previous explorations using Datomic and EventStore)[https://github.com/jankronquist/rock-paper-scissors-in-clojure]. 
 
-    $ lein run -m heroku-rps.web
+## Purpose
 
-Initialize a git repository for your project.
+Used as part of a lab teaching how to build small services communicating using messaging. Not intended for production! :-)
 
-    $ git init
-    $ git add .
-    $ git commit -m "Initial commit."
+MongoDB is simply used as a key/value storage and RabbitMQ as a simple publish/subscribe bus. 
 
-You'll need the [heroku toolbelt](https://toolbelt.herokuapp.com)
-installed to manage the heroku side of your app. Once it's installed,
-get the app created:
+## Limitations and known issues
 
-    $ heroku apps:create heroku-rps
-    Creating heroku-rps... done, stack is cedar
-    http://heroku-rps.herokuapp.com/ | git@heroku.com:heroku-rps.git
-    Git remote heroku added
+Note: 
 
-You can deploy the skeleton project immediately:
+* This does not use event sourcing! MongoDB and RabbitMQ are not updated transactionally, instead first the message is sent and then MongoDB is update. This means that updates can be lost.
+* Basically no input validation! :-)
+* To keep it simple very few features of RabbitMQ is being used. Instead the message payload contains meta data.
 
-    $ git push heroku master
-    Writing objects: 100% (13/13), 2.87 KiB, done.
-    Total 13 (delta 0), reused 0 (delta 0)
+# Running
 
-    -----> Heroku receiving push
-    -----> Clojure app detected
-    -----> Installing Leiningen
-           Downloading: leiningen-2.0.0-preview7-standalone.jar
-    [...]
-    -----> Launching... done, v3
-           http://heroku-rps.herokuapp.com deployed to Heroku
+# Locally
 
-    To git@heroku.com:heroku-rps.git
-     * [new branch]      master -> master
+If you want to run the service locally you need:
 
-It's live! Hit it with `curl`:
+1. Leiningen (`brew install leiningen`)
+2. MongoDB (`brew install mongodb`)
+3. RabbitMQ (`brew install rabbitmq`)
 
-    $ curl http://heroku-rps.herokuap.com
-    ["Hello" :from Heroku]
+Run using: `lein run`
 
-The cookie-backed session store needs a session secret configured for encryption:
+## Heroku
 
-    $ heroku config:add SESSION_SECRET=$RANDOM_16_CHARS
+You need to [add three properties](https://toolbelt.heroku.com/) pointing out the AMQP and MongoDB URL's:
 
-## Remote REPL
+```bash
+heroku config:set RABBITMQ_URL="<amqp_url>"
+heroku config:set MONGODB_URL="<mongodb_url>"
+heroku config:add SESSION_SECRET=$RANDOM_16_CHARS
+```
 
-The [devcenter article](https://devcenter.heroku.com/articles/debugging-clojure)
-has a detailed explanation, but using the `repl` task from Leiningen
-2.x lets you connect a REPL to a remote process over HTTP. The first
-step is setting up credentials:
+Both URLs must contain username and password, port etc.
 
-    $ heroku config:add REPL_USER=[...] REPL_PASSWORD=[...]
+# License
 
-Then you can launch the REPL:
-
-    $ lein repl :connect http://$REPL_USER:$REPL_PASSWORD@myapp.herokuapp.com/repl
-
-Everything you enter will be evaluated remotely in the running dyno,
-which can be very useful for debugging or inspecting live data.
-
-## License
-
-Copyright © 2014 FIXME
+Copyright @ 2014 Jan Kronquist
 
 Distributed under the Eclipse Public License, the same as Clojure.
