@@ -43,7 +43,7 @@
    [:hr]])
 
 (defn render-game [game-id player]
-  (let [game (app/load-aggregate game-id)
+  (let [game (app/load-aggregate @app/singleton game-id)
         playing? (some #{player} (:players game))
         moved? (some #(= player (:player %)) (:moves game))]
     ; TODO check if game is nil
@@ -93,13 +93,13 @@
                                      1 (conj player-input creator)
                                      2 player-input
                                      (throw (Exception. "Incorrect number of players")))]
-            (app/handle-command app/singleton (m/->CreateGameCommand game-id creator players))
+            (app/handle-command @app/singleton (m/->CreateGameCommand game-id creator players))
             (ring.util.response/redirect-after-post (str "/games/" game-id)))))
   (GET "/games/:game-id" [game-id :as request]
        (render-game game-id (get-player-id request)))
   (POST "/games/:game-id" [game-id move :as r]
         (friend/authenticated
-          (app/handle-command app/singleton (m/->MakeMoveCommand game-id (get-player-id r) move))
+          (app/handle-command @app/singleton (m/->MakeMoveCommand game-id (get-player-id r) move))
           (ring.util.response/redirect-after-post (str "/games/" game-id))))
   (GET "/logout" req
        (friend/logout* (resp/redirect (str (:context req) "/"))))
