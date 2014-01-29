@@ -11,7 +11,8 @@
    :body body
    :meta {}
    :streamId stream-id
-   :createdAt (System/currentTimeMillis)})
+   :createdAt (System/currentTimeMillis)
+   :messageId (.toString (java.util.UUID/randomUUID))})
 
 (defn game-created-event [game-id created-by players]
   (make-message 
@@ -53,8 +54,9 @@
   (make-message 
     "rock-paper-scissors" 
     "ServiceOnlineEvent"
-    {:name "rock-paper-scissors"
-     :entryPoint entryPoint
+    {:description "Game engine for Rock Paper Scissors"
+     :serviceUrl entryPoint
+     :sourceUrl "https://github.com/jankronquist/simple-rps-service"
      :createdBy "Jan Kronquist"}))
 
 (defn log-event [level context message]
