@@ -2,17 +2,17 @@
 
 The game Rock-Paper-Scissors implemented as a microservice that stores data in MongoDB and publishes events to RabbitMQ. The service has a simple restful HTTP API that allows creation of games and making moves.
 
-Try it (here)[http://simple-rps-service.herokuapp.com/]!
+Try it [here](http://simple-rps-service.herokuapp.com/)!
 
 Built using the following:
 
-* (Langohr)[http://clojurerabbitmq.info/] as RabbitMQ client
-* (Monger)[http://clojuremongodb.info/] as MongoDB client
-* (Cheshire)[https://github.com/dakrone/cheshire] for JSON marshalling
-* (Friend)[https://github.com/cemerick/friend] for OpenID authentication
-* The usual suspects: (Ring)[https://github.com/ring-clojure/ring], (Compojure)[https://github.com/weavejester/compojure], (Hiccup)[https://github.com/weavejester/hiccup]...
+* [Langohr](http://clojurerabbitmq.info/) as RabbitMQ client
+* [Monger](http://clojuremongodb.info/) as MongoDB client
+* [Cheshire](https://github.com/dakrone/cheshire) for JSON marshalling
+* [Friend](https://github.com/cemerick/friend) for OpenID authentication
+* The usual suspects: [Ring](https://github.com/ring-clojure/ring), [Compojure](https://github.com/weavejester/compojure), [Hiccup](https://github.com/weavejester/hiccup)...
 
-Deployed on (Heroku)[http://heroku.com] using (CloudAMQP)[http://www.cloudamqp.com/] and (MongoHQ)[http://www.mongohq.com/]. Initally based on (leiningen heroku template)[https://github.com/technomancy/lein-heroku] and (my previous explorations using Datomic and EventStore)[https://github.com/jankronquist/rock-paper-scissors-in-clojure]. 
+Deployed on [Heroku](http://heroku.com) using [CloudAMQP](http://www.cloudamqp.com/) and [MongoHQ](http://www.mongohq.com/). Initally based on [leiningen heroku template](https://github.com/technomancy/lein-heroku) and [my previous explorations using Datomic and EventStore](https://github.com/jankronquist/rock-paper-scissors-in-clojure).
 
 ## Purpose
 
