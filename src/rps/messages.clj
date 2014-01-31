@@ -60,12 +60,11 @@
 
 (def instanceId (.toString (java.util.UUID/randomUUID)))
 
-(defn log-event [level context message]
+(defn log-event [level message]
   (make-message 
     instanceId
     "LogEvent"
     {:level level
-     :context context
      :message message}))
 
 ; commands
