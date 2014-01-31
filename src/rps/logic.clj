@@ -18,16 +18,16 @@
 ; game aggregate - event handlers
 
 (defmethod c/apply-event "GameCreatedEvent" [state event]
-  (let [creator (get-in event [:body :createdBy])
-        players (get-in event [:body :players])]
+  (let [creator (:createdBy event)
+        players (:players event)]
     (assoc state
       :state "started"
       :creator creator
       :players players)))
 
 (defmethod c/apply-event "MoveMadeEvent" [state event]
-  (let [player (get-in event [:body :player])
-        move (get-in event [:body :move])
+  (let [player (:player event)
+        move (:move event)
         moves (:moves state)]
     (assoc state
            :other-player player
@@ -39,9 +39,9 @@
 (defmethod c/apply-event "GameEndedEvent" [state event]
   (assoc state
     :state "completed"
-    :result (get-in event [:body :result])
-    :winner (get-in event [:body :winner])
-    :loser (get-in event [:body :loser])))
+    :result (:result event)
+    :winner (:winner event)
+    :loser (:loser event)))
 
 ; game aggregate command handler
 

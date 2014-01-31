@@ -7,12 +7,11 @@
 ; events
 
 (defn make-message [stream-id type body]
-  {:type type
-   :body body
-   :meta {}
-   :streamId stream-id
-   :createdAt (System/currentTimeMillis)
-   :messageId (.toString (java.util.UUID/randomUUID))})
+  (with-meta body {:type type
+                   :app-id "rock-paper-scissors"
+                   :headers {"streamId" stream-id}
+                   :timestamp (new java.util.Date)
+                   :message-id (.toString (java.util.UUID/randomUUID))}))
 
 (defn game-created-event [game-id created-by players]
   (make-message 
@@ -59,9 +58,11 @@
      :sourceUrl "https://github.com/jankronquist/simple-rps-service"
      :createdBy "Jan Kronquist"}))
 
+(def instanceId (.toString (java.util.UUID/randomUUID)))
+
 (defn log-event [level context message]
   (make-message 
-    "rock-paper-scissors" 
+    instanceId
     "LogEvent"
     {:level level
      :context context

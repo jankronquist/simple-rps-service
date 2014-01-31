@@ -29,7 +29,9 @@
         result (reify ApplicationService
                  (publish-message [this routing-key message]
                    (let [json-data (generate-string message)]
-                     (lb/publish channel "lab" routing-key json-data :content-type "application/json")))
+                     (apply lb/publish channel "lab" routing-key json-data 
+                                 :content-type "application/json"
+                                 (flatten (seq (meta message))))))
                  
                  (load-aggregate [this id]
                    (if-let [existing (mc/find-one-as-map "aggregates" {:aggregateId id})]
