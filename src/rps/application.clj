@@ -54,7 +54,7 @@
                                             result)]
                          (if (== 0 (.getN write-result))
                            (let [message (str "Failed to perform command " (print-str command))]
-                             (publish-message this "service" (msg/log-event "INFO" message))
+                             (publish-message this "service" (msg/log-event "WARN" message))
                              (throw (new java.util.ConcurrentModificationException message))))))
                      (doseq [event new-events] (publish-message this "game" event))
                      new-events)))]

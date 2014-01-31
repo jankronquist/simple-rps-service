@@ -18,6 +18,12 @@
 
 (defn new-uuid [] (.toString (java.util.UUID/randomUUID)))
 
+(defn log 
+  ([level message]
+    (app/publish-message @app/application "service" (m/log-event level message)))
+  ([level message details]
+    (app/publish-message @app/application "service" (assoc (m/log-event level message) :details details))))
+
 (defn render-move-form 
   ([game-id]
     (let [uri (str "/games/" game-id)]
@@ -109,6 +115,7 @@
           (app/handle-command @app/application (m/->MakeMoveCommand game-id (get-player-id r) move))
           (ring.util.response/redirect-after-post (str "/games/" game-id))))
   (GET "/logout" req
+       (log "INFO" (str "User " (get-player-id req) " logged out"))
        (friend/logout* (resp/redirect (str (:context req) "/"))))
   (ANY "*" []
        (route/not-found (slurp (io/resource "404.html")))))
@@ -121,10 +128,32 @@
             :headers {"Content-Type" "text/html"}
             :body (slurp (io/resource "500.html"))}))))
 
+(defn logged-in [credential]
+  (log "INFO" (str "User " (:email credential) " logged in"))  
+  credential)
+
+(defn wrap-log-exceptions
+  [handler]
+  (fn [request]
+    (try
+      (handler request)
+      (catch Throwable ex
+        (println "PRINTLN:" request)
+        (println "PRINT-STR: " (print-str request))
+        (log "ERROR" 
+             (format "Exception in request %s %s: %s"
+                     (:request-method request)
+                     (:uri request)
+                     (.getMessage ex))
+             (select-keys request [:remote-addr :query-params :form-params :request-method :content-type :uri :server-name :content-length]))
+        (throw ex)))))
+
 (defn -main [& [port]]
   (let [port (Integer. (or port (env :port) 5000))
-        store (cookie/cookie-store {:key (env :session-secret)})]
+        store (cookie/cookie-store {:key (env :session-secret)})
+        app @app/application]
     (jetty/run-jetty (-> #'app
+                         wrap-log-exceptions
                          ((if (env :production)
                             wrap-error-page
                             trace/wrap-stacktrace))
@@ -133,6 +162,8 @@
 	                                :default-landing-uri "/"
 	                                :workflows [(openid/workflow
 	                                              :openid-uri "/login"
-	                                              :credential-fn identity)]})
+	                                              :credential-fn logged-in)]})
                          (site {:session {:store store}}))
                      {:port port :join? false})))
+
+
