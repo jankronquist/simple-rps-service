@@ -34,14 +34,13 @@
                                  (flatten (seq (meta message))))))
                  
                  (load-aggregate [this id]
-                   (if-let [existing (mc/find-one-as-map "aggregates" {:aggregateId id})]
-                     existing
-                     {:aggregateId id
-                      :version 0}))
+                   (mc/find-one-as-map "aggregates" {:aggregateId id}))
 
                  (handle-command [this command]
                    (let [id (:aggregate-id command)
-                         current-state (load-aggregate this id)
+                         current-state (or 
+                                         (load-aggregate this id)
+                                         {:aggregateId id :version 0})
                          current-version (:version current-state)
                          new-events (c/perform command current-state)
                          new-state (c/apply-events current-state new-events)
