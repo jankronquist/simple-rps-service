@@ -19,7 +19,6 @@
     "GameCreatedEvent"
     {:createdBy created-by
      :players players
-     :gameType "rock-paper-scissors"
      :gameUrl (str entryPoint "/games/" game-id)}))
 
 (defn game-won-event 
@@ -30,8 +29,7 @@
     {:result "won"
      :scores scores
      :winner winner
-     :loser loser
-     :gameType "rock-paper-scissors"}))
+     :loser loser}))
 
 (defn game-tied-event 
   [game-id scores]
@@ -39,8 +37,7 @@
     game-id 
     "GameEndedEvent"
     {:result "tied"
-     :scores scores
-     :gameType "rock-paper-scissors"}))
+     :scores scores}))
 
 (defn move-made-event [game-id player move]
   (make-message 
