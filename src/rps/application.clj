@@ -24,7 +24,7 @@
 
 (def application (delay
   (let [rabbitmq-uri (get (System/getenv) "RABBITMQ_URL" "amqp://guest:guest@localhost")
-        amqp-conn (rmq/connect {:uri rabbitmq-uri :ssl false})
+        amqp-conn (rmq/connect {:uri rabbitmq-uri :ssl (.startsWith rabbitmq-uri "amqps")})
         channel (lch/open amqp-conn)
         result (reify ApplicationService
                  (publish-message [this routing-key message]
