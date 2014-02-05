@@ -20,9 +20,9 @@
 
 (defn log 
   ([level message]
-    (app/publish-message @app/application "service" (m/log-event level message)))
+    (app/publish-message @app/application "log" (m/log-event level message)))
   ([level message details]
-    (app/publish-message @app/application "service" (assoc (m/log-event level message) :details details))))
+    (app/publish-message @app/application "log" (assoc (m/log-event level message) :details details))))
 
 (defn render-move-form 
   ([game-id]
