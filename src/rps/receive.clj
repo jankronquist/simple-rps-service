@@ -10,13 +10,15 @@
 
 (defn message-handler
   [ch {:keys [content-type delivery-tag type header] :as meta} ^bytes payload]
-  (println (format "[consumer] Received a message: %s, content type: %s, type: %s"
-                   (String. payload "UTF-8") content-type type))
-  (println "meta=" meta))
+  (println "Received message!")
+  (println "META: " meta)
+  (println "BODY: " (String. payload "UTF-8"))
+  (println))
 
 (defn -main
   [& args]
-  (let [conn  (rmq/connect)
+  (let [rabbitmq-uri (get (System/getenv) "RABBITMQ_URL" "amqp://guest:guest@localhost")
+        conn (rmq/connect {:uri rabbitmq-uri :ssl (.startsWith rabbitmq-uri "amqps")})
         ch    (lch/open conn)
         qname "langohr.examples.hello-world"]
     (println (format "[main] Connected. Channel id: %d" (.getChannelNumber ch)))
