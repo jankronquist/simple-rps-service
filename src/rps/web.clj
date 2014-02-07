@@ -6,6 +6,7 @@
             [cemerick.friend :as friend]
             [cemerick.friend.openid :as openid]
             [cemerick.friend.workflows :as workflows]
+            [cemerick.friend.credentials :as creds]
             [ring.middleware.stacktrace :as trace]
             [ring.middleware.session :as session]
             [ring.middleware.session.cookie :as cookie]
@@ -23,6 +24,31 @@
     (app/publish-message @app/application "log" (m/log-event level message)))
   ([level message details]
     (app/publish-message @app/application "log" (assoc (m/log-event level message) :details details))))
+
+(defn get-logged-in-player 
+  [request]
+  (if-let [auth (friend/current-authentication request)]
+    (case (:type auth)
+      :open-id (:email auth) 
+      :basic-auth (or 
+                    (get-in request [:params :player])
+                    (:username auth)))
+    nil))
+
+(defn opendid-credential-fn [credential]
+  (log "INFO" (str "User " (:email credential) " logged in using Open ID"))
+  (assoc credential :type :open-id))
+
+(defn basic-auth-credential-fn [credential]
+  (let [root-password (get (System/getenv) "ROOT_PASSWORD" "secret")]
+    (if (and (= "root" (:username credential))
+             (= root-password (:password credential)))
+      (do
+        (log "INFO" (str "User " (:username credential) " performed request using Basic Auth"))
+        (assoc credential :type :basic-auth))
+      (do
+        (log "WARN" (str "User " (:username credential) " performed request with failed authentication"))
+        nil))))
 
 (defn render-move-form 
   ([game-id]
@@ -74,12 +100,6 @@
                                (render-moves (:moves game))]
                   "???")]]))))
 
-(defn get-player-id 
-  [request]
-  (if-let [auth (friend/current-authentication request)]
-    (:email auth)
-    nil))
-
 (defn ensure-vector [arg]
   (if-not arg
     []
@@ -89,7 +109,7 @@
 
 (defroutes app
   (GET "/" req
-       (let [player (get-player-id req)]
+       (let [player (get-logged-in-player req)]
          (html 
            [:body
             (render-header player)
@@ -100,7 +120,7 @@
   (POST "/" r 
         (friend/authenticated
           (let [game-id (app/new-id)
-                creator (get-player-id r)
+                creator (get-logged-in-player r)
                 player-input (ensure-vector (get-in r [:form-params "player"]))
                 players (case (count (filter #(not (.isEmpty (.trim %))) player-input))
                                      1 (conj player-input creator)
@@ -109,13 +129,13 @@
             (app/handle-command @app/application (m/->CreateGameCommand game-id creator players))
             (ring.util.response/redirect-after-post (str "/games/" game-id)))))
   (GET "/games/:game-id" [game-id :as request]
-       (render-game game-id (get-player-id request)))
+       (render-game game-id (get-logged-in-player request)))
   (POST "/games/:game-id" [game-id move :as r]
         (friend/authenticated
-          (app/handle-command @app/application (m/->MakeMoveCommand game-id (get-player-id r) move))
+          (app/handle-command @app/application (m/->MakeMoveCommand game-id (get-logged-in-player r) move))
           (ring.util.response/redirect-after-post (str "/games/" game-id))))
   (GET "/logout" req
-       (log "INFO" (str "User " (get-player-id req) " logged out"))
+       (log "INFO" (str "User " (get-logged-in-player req) " logged out"))
        (friend/logout* (resp/redirect (str (:context req) "/"))))
   (ANY "*" []
        (route/not-found (slurp (io/resource "404.html")))))
@@ -127,10 +147,6 @@
            {:status 500
             :headers {"Content-Type" "text/html"}
             :body (slurp (io/resource "500.html"))}))))
-
-(defn logged-in [credential]
-  (log "INFO" (str "User " (:email credential) " logged in"))  
-  credential)
 
 (defn wrap-log-exceptions
   [handler]
@@ -162,8 +178,9 @@
 	                                :default-landing-uri "/"
 	                                :workflows [(openid/workflow
 	                                              :openid-uri "/login"
-	                                              :credential-fn logged-in)]})
+	                                              :credential-fn opendid-credential-fn)
+                                             (workflows/http-basic
+                                               :credential-fn basic-auth-credential-fn
+                                               :realm "Friend demo")]})
                          (site {:session {:store store}}))
                      {:port port :join? false})))
-
-
