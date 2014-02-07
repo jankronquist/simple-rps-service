@@ -13,7 +13,8 @@
                  [org.webjars/foundation "4.0.4"]
                  [hiccup "1.0.4"]
                  [com.novemberain/monger "1.5.0"]
-                 [com.novemberain/langohr "1.0.0-beta10"]
+                 [com.novemberain/langohr "2.3.2"]
+                 [clojurewerkz/support "0.20.0"]
                  [cheshire "5.3.1"]]
   :main rps.web
   :min-lein-version "2.0.0"

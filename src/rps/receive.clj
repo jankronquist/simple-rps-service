@@ -24,7 +24,7 @@
     (println (format "[main] Connected. Channel id: %d" (.getChannelNumber ch)))
     (lq/declare ch qname :exclusive false :auto-delete true)
     (lq/bind ch qname "lab" :routing-key "*") 
-    (lc/subscribe ch qname message-handler :auto-ack true)
+    (lc/subscribe ch qname (lc/ack-unless-exception message-handler))
     (Thread/sleep 3600000)
     (println "[main] Disconnecting...")
     (rmq/close ch)
