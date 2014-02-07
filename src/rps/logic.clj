@@ -57,9 +57,9 @@
     (when-not (= state "started")
       (throw (Exception. "Incorrect state")))
     (when-not (some #{player} players)
-      (throw (Exception. "Player not playing this game")))
+      (throw (Exception. (str "Player " player " not playing this game"))))
     (when (= other-player player)
-      (throw (Exception. "Player has already made a move")))
+      (throw (Exception. (str "Player " player " has already made a move"))))
     (let [events [(m/move-made-event aggregate-id player move)]]
       (if-not other-move
         events
