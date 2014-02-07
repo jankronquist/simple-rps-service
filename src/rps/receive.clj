@@ -20,9 +20,8 @@
   (let [rabbitmq-uri (get (System/getenv) "RABBITMQ_URL" "amqp://guest:guest@localhost")
         conn (rmq/connect {:uri rabbitmq-uri :ssl (.startsWith rabbitmq-uri "amqps")})
         ch    (lch/open conn)
-        qname "langohr.examples.hello-world"]
+        qname (lq/declare-server-named ch)]
     (println (format "[main] Connected. Channel id: %d" (.getChannelNumber ch)))
-    (lq/declare ch qname :exclusive false :auto-delete true)
     (lq/bind ch qname "lab" :routing-key "*") 
     (lc/subscribe ch qname (lc/ack-unless-exception message-handler))
     (Thread/sleep 3600000)
