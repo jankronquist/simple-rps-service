@@ -52,6 +52,37 @@ heroku config:add SESSION_SECRET=$RANDOM_16_CHARS
 
 Both URLs must contain username and password, port etc.
 
+## Messages
+
+### GameEndedEvent
+
+Extends message specified by: https://github.com/johanhaleby/lab-service-registry/blob/master/LAB.md
+
+Example:
+```javascript
+{
+  "scores":{
+     "player1":10,
+     "player2":20
+  },
+  "result": "won",
+  "winner": "player1",
+  "loser": "player2"
+}
+```
+
+### MoveMadeEvent
+
+Sent when a player has made a move.
+
+Example:
+```javascript
+{
+  "player": "player1",
+  "move": "rock"
+}
+```
+
 # License
 
 Copyright @ 2014 Jan Kronquist
