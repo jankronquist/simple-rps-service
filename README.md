@@ -83,6 +83,12 @@ Example:
 }
 ```
 
+## HTTP API
+
+To make a move using curl:
+
+	curl -u root:<password> -d player=<playerToMakeMove> -d move=<rock/paper/scissors> http://simple-rps-service.herokuapp.com/games/{gameId}
+
 # License
 
 Copyright @ 2014 Jan Kronquist
