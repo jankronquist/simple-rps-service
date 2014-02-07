@@ -58,16 +58,27 @@ Both URLs must contain username and password, port etc.
 
 Extends message specified by: https://github.com/johanhaleby/lab-service-registry/blob/master/LAB.md
 
-Example:
+Example when won:
 ```javascript
 {
   "scores":{
-     "player1":10,
-     "player2":20
+     "player1":1,
+     "player2":0
   },
   "result": "won",
   "winner": "player1",
   "loser": "player2"
+}
+```
+
+Example when tied:
+```javascript
+{
+  "scores":{
+     "player1":10,
+     "player2":0
+  },
+  "result": "tied"
 }
 ```
 
